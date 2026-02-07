@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, Lightbulb, Users } from "lucide-react";
+import { AlertTriangle, Lightbulb, Loader2, RefreshCw, Users, WifiOff } from "lucide-react";
 import { useCallback, useState } from "react";
 import {
 	AgeGroupChart,
@@ -19,16 +19,19 @@ import {
 	UrbanRuralCards,
 } from "@/components/dashboard";
 import { FadeInUp } from "@/components/motion";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ageGroupData, nationalSummary, sectorData, stateData, trendData } from "@/data/plfs-data";
+import { usePLFSData } from "@/lib/use-plfs-data";
 import type { AreaType, StateEmploymentData } from "@/types/employment";
 
 export default function Dashboard() {
+	const { data, loading, error, refetch } = usePLFSData();
+
 	const [selectedState, setSelectedState] = useState("all");
 	const [areaType, setAreaType] = useState<AreaType>("all");
-	const [timePeriod, setTimePeriod] = useState("Q4-2024");
+	const [timePeriod, setTimePeriod] = useState("Annual-2023-24");
 	const [compareStates, setCompareStates] = useState<string[]>([]);
 	const [mapMetric, setMapMetric] = useState<"unemploymentRate" | "lfpr" | "wpr">(
 		"unemploymentRate",
@@ -56,6 +59,48 @@ export default function Dashboard() {
 		setCompareStates([]);
 	}, []);
 
+	// Loading state
+	if (loading) {
+		return (
+			<div className="container px-4 py-6">
+				<div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+					<Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+					<div className="text-center">
+						<p className="text-sm font-medium">Loading live PLFS data</p>
+						<p className="text-xs text-muted-foreground mt-1">
+							Fetching from Ministry of Statistics (MoSPI)...
+						</p>
+					</div>
+				</div>
+			</div>
+		);
+	}
+
+	// Error state
+	if (error || !data) {
+		return (
+			<div className="container px-4 py-6">
+				<div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+					<div className="flex items-center justify-center w-12 h-12 rounded-full bg-destructive/10">
+						<WifiOff className="h-6 w-6 text-destructive" />
+					</div>
+					<div className="text-center">
+						<p className="text-sm font-medium">Data temporarily unavailable</p>
+						<p className="text-xs text-muted-foreground mt-1 max-w-md">
+							{error ?? "Unable to fetch data from MoSPI."}
+						</p>
+					</div>
+					<Button variant="outline" size="sm" onClick={refetch} className="mt-2">
+						<RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+						Retry
+					</Button>
+				</div>
+			</div>
+		);
+	}
+
+	const { nationalSummary, stateData, ageGroupData, sectorData, trendData } = data;
+
 	const selectedStatesData: StateEmploymentData[] = compareStates
 		.map((code) => stateData.find((s) => s.stateCode === code))
 		.filter((s): s is StateEmploymentData => s !== undefined);
@@ -72,6 +117,7 @@ export default function Dashboard() {
 						onAreaTypeChange={setAreaType}
 						timePeriod={timePeriod}
 						onTimePeriodChange={setTimePeriod}
+						stateList={stateData}
 					/>
 				</div>
 			</FadeInUp>
@@ -228,9 +274,11 @@ export default function Dashboard() {
 									</div>
 									<p className="text-xs text-muted-foreground leading-relaxed">
 										Urban unemployment ({nationalSummary.urbanUR}%) is{" "}
-										{(nationalSummary.urbanUR / nationalSummary.ruralUR).toFixed(1)}x the rural rate
-										({nationalSummary.ruralUR}%), reflecting the dynamics of formal vs agricultural
-										employment.
+										{nationalSummary.ruralUR > 0
+											? `${(nationalSummary.urbanUR / nationalSummary.ruralUR).toFixed(1)}x`
+											: "significantly higher than"}{" "}
+										the rural rate ({nationalSummary.ruralUR}%), reflecting the dynamics of formal
+										vs agricultural employment.
 									</p>
 								</CardContent>
 							</Card>
@@ -326,10 +374,10 @@ export default function Dashboard() {
 								<div className="flex items-center justify-between">
 									<div>
 										<CardTitle className="text-sm font-semibold">
-											Employment Trends (2020-2024)
+											Employment Trends (2017-2024)
 										</CardTitle>
 										<CardDescription className="text-xs">
-											Quarterly trend analysis with gradient area charts
+											Annual trend analysis from PLFS data
 										</CardDescription>
 									</div>
 									<div className="flex items-center gap-2">

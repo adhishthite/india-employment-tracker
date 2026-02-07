@@ -8,8 +8,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { stateData } from "@/data/plfs-data";
-import type { AreaType } from "@/types/employment";
+import type { AreaType, StateEmploymentData } from "@/types/employment";
 
 interface FiltersProps {
 	selectedState: string;
@@ -18,6 +17,7 @@ interface FiltersProps {
 	onAreaTypeChange: (type: AreaType) => void;
 	timePeriod: string;
 	onTimePeriodChange: (period: string) => void;
+	stateList: StateEmploymentData[];
 }
 
 export function Filters({
@@ -27,6 +27,7 @@ export function Filters({
 	onAreaTypeChange,
 	timePeriod,
 	onTimePeriodChange,
+	stateList,
 }: FiltersProps) {
 	return (
 		<div className="flex flex-wrap items-end gap-3">
@@ -44,7 +45,7 @@ export function Filters({
 					</SelectTrigger>
 					<SelectContent>
 						<SelectItem value="all">All States</SelectItem>
-						{stateData.map((state) => (
+						{stateList.map((state) => (
 							<SelectItem key={state.stateCode} value={state.stateCode}>
 								{state.stateName}
 							</SelectItem>
@@ -78,11 +79,9 @@ export function Filters({
 						<SelectValue placeholder="Select Period" />
 					</SelectTrigger>
 					<SelectContent>
-						<SelectItem value="Q4-2024">Q4 2024 (Oct-Dec)</SelectItem>
-						<SelectItem value="Q3-2024">Q3 2024 (Jul-Sep)</SelectItem>
-						<SelectItem value="Q2-2024">Q2 2024 (Apr-Jun)</SelectItem>
-						<SelectItem value="Q1-2024">Q1 2024 (Jan-Mar)</SelectItem>
-						<SelectItem value="Annual-2023">Annual 2023</SelectItem>
+						<SelectItem value="Annual-2023-24">Annual 2023-24</SelectItem>
+						<SelectItem value="Annual-2022-23">Annual 2022-23</SelectItem>
+						<SelectItem value="Annual-2021-22">Annual 2021-22</SelectItem>
 					</SelectContent>
 				</Select>
 			</div>
