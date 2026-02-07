@@ -6,6 +6,9 @@ State-wise employment analytics dashboard powered by live PLFS data from the Gov
 ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)
 ![MoSPI](https://img.shields.io/badge/Data-MoSPI_PLFS-orange)
 ![MCP](https://img.shields.io/badge/Protocol-MCP-purple)
+[![Live Demo](https://img.shields.io/badge/Live_Demo-▶_Vercel-black?logo=vercel)](https://india-employment-tracker.vercel.app)
+
+🔗 **Live Demo:** [india-employment-tracker.vercel.app](https://india-employment-tracker.vercel.app)
 
 ![Dashboard Preview](screenshot.png)
 
