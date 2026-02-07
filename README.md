@@ -157,7 +157,7 @@ Key files:
 
 - GitHub: [github.com/adhishthite](https://github.com/adhishthite)
 - LinkedIn: [linkedin.com/in/adhishthite](https://linkedin.com/in/adhishthite)
-- Twitter: [x.com/AdhishThite](https://x.com/AdhishThite)
+- Twitter: [@xadhish](https://x.com/xadhish)
 
 ## License
 
