@@ -566,13 +566,12 @@ export async function fetchAllDashboardData(): Promise<{
 	sectorData: SectorData[];
 	trendData: TrendData[];
 }> {
-	const [nationalSummary, stateData, ageGroupData, sectorData, trendData] = await Promise.all([
-		fetchNationalSummary(),
-		fetchStateData(),
-		fetchAgeGroupData(),
-		fetchSectorData(),
-		fetchTrendData(),
-	]);
+	// Fetch sequentially to avoid 429 rate limiting from MoSPI API
+	const nationalSummary = await fetchNationalSummary();
+	const stateData = await fetchStateData();
+	const ageGroupData = await fetchAgeGroupData();
+	const sectorData = await fetchSectorData();
+	const trendData = await fetchTrendData();
 
 	return { nationalSummary, stateData, ageGroupData, sectorData, trendData };
 }

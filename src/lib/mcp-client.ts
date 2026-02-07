@@ -45,7 +45,7 @@ async function initSession(): Promise<McpSession> {
 			id: 1,
 			method: "initialize",
 			params: {
-				protocolVersion: "2024-11-05",
+				protocolVersion: "2025-03-26",
 				capabilities: {},
 				clientInfo: { name: "india-employment-tracker", version: "1.0.0" },
 			},
@@ -185,32 +185,116 @@ export interface PLFSFilters {
 }
 
 /**
- * Full PLFS data fetch: init session, call tool 1 (overview), tool 4 (data).
- * Tools 2 and 3 are for interactive discovery - we already know the codes
- * from our exploration, so we skip them in production calls.
- *
- * The server requires the session to be initialized and tool 1 called
- * before tool 4. We comply with the mandatory workflow.
+ * Full PLFS data fetch following the mandatory 4-step MCP workflow.
+ * The MoSPI server enforces sequential tool calls: 1 → 2 → 3 → 4.
+ * Skipping steps results in errors.
  */
-export async function fetchPLFSData(filters: PLFSFilters): Promise<PLFSDataResponse> {
-	const session = await initSession();
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-	// Step 1: mandatory overview call
-	await callTool(session, "1_know_about_mospi_api", {});
+// Shared session: initialized once, reused across all fetchers
+let sharedSession: McpSession | null = null;
+let sessionReady = false;
 
-	// Step 4: fetch actual data (tools 2/3 are for discovery, codes are known)
-	const result = await callTool(session, "4_get_data", {
+/**
+ * Get or create a shared MCP session with steps 1-3 already done.
+ */
+async function getSharedSession(indicatorCode: number, frequencyCode: number): Promise<McpSession> {
+	if (sharedSession && sessionReady) {
+		return sharedSession;
+	}
+
+	sharedSession = await initSession();
+	await delay(1000);
+
+	// Step 1: mandatory overview
+	await callTool(sharedSession, "1_know_about_mospi_api", {});
+	await delay(1000);
+
+	// Step 2: get indicators for PLFS
+	await callTool(sharedSession, "2_get_indicators", {
 		dataset: "PLFS",
-		filters: {
-			...filters,
-			Format: filters.Format ?? "JSON",
-		},
+		user_query: "employment unemployment labour force data",
+		frequency_code: frequencyCode,
 	});
+	await delay(1000);
 
-	const data = extractData(result) as unknown as PLFSDataResponse;
+	// Step 3: get metadata
+	await callTool(sharedSession, "3_get_metadata", {
+		dataset: "PLFS",
+		indicator_code: indicatorCode,
+		frequency_code: frequencyCode,
+	});
+	await delay(1000);
 
-	if (!data.statusCode) {
-		throw new Error(`PLFS data fetch failed: ${data.msg}`);
+	sessionReady = true;
+	return sharedSession;
+}
+
+/**
+ * Reset shared session (e.g., on error)
+ */
+function resetSession() {
+	sharedSession = null;
+	sessionReady = false;
+}
+
+export async function fetchPLFSData(filters: PLFSFilters): Promise<PLFSDataResponse> {
+	const session = await getSharedSession(
+		Number.parseInt(filters.indicator_code) || 1,
+		Number.parseInt(filters.frequency_code) || 1,
+	);
+
+	await delay(1500); // Rate limit: wait between data calls
+
+	// Step 4: fetch actual data (session already has steps 1-3 done)
+	let result: McpToolResult;
+	try {
+		result = await callTool(session, "4_get_data", {
+			dataset: "PLFS",
+			filters: {
+				...filters,
+				Format: filters.Format ?? "JSON",
+			},
+		});
+	} catch (err) {
+		// On session error, reset and retry once
+		resetSession();
+		const freshSession = await getSharedSession(
+			Number.parseInt(filters.indicator_code) || 1,
+			Number.parseInt(filters.frequency_code) || 1,
+		);
+		await delay(2000);
+		result = await callTool(freshSession, "4_get_data", {
+			dataset: "PLFS",
+			filters: {
+				...filters,
+				Format: filters.Format ?? "JSON",
+			},
+		});
+	}
+
+	const raw = extractData(result);
+
+	// MCP may return an error string in the data
+	if ("error" in raw && typeof raw.error === "string") {
+		throw new Error(`MoSPI API error: ${raw.error}`);
+	}
+
+	const data = raw as unknown as PLFSDataResponse;
+
+	if (!data.statusCode && data.statusCode !== undefined) {
+		const errorDetail = data.msg || JSON.stringify(data).slice(0, 200);
+		throw new Error(`PLFS data fetch failed: ${errorDetail}`);
+	}
+
+	// Handle case where meta_data is missing (single page response)
+	if (!data.meta_data) {
+		data.meta_data = {
+			page: 1,
+			totalRecords: data.data?.length ?? 0,
+			totalPages: 1,
+			recordPerPage: data.data?.length ?? 0,
+		};
 	}
 
 	return data;
