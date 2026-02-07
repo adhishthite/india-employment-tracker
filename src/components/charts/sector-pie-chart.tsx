@@ -43,7 +43,9 @@ export function SectorPieChart({ data, areaType = "all" }: SectorPieChartProps) 
 					paddingAngle={2}
 					dataKey="value"
 					label={({ name, percent }) =>
-						percent && percent > 0.05 ? `${String(name).split(" ")[0]} ${(percent * 100).toFixed(0)}%` : ""
+						percent && percent > 0.05
+							? `${String(name).split(" ")[0]} ${(percent * 100).toFixed(0)}%`
+							: ""
 					}
 				>
 					{chartData.map((_, index) => (
