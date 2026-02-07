@@ -1,5 +1,6 @@
 "use client";
 
+import { Filter } from "lucide-react";
 import {
 	Select,
 	SelectContent,
@@ -28,13 +29,17 @@ export function Filters({
 	onTimePeriodChange,
 }: FiltersProps) {
 	return (
-		<div className="flex flex-wrap gap-4">
-			<div className="flex flex-col gap-1.5">
-				<label className="text-sm text-muted-foreground" htmlFor="state-select">
+		<div className="flex flex-wrap items-end gap-3">
+			<div className="flex items-center gap-2 text-xs text-muted-foreground mr-1">
+				<Filter className="h-3.5 w-3.5" />
+				<span className="font-medium hidden sm:inline">Filters</span>
+			</div>
+			<div className="flex flex-col gap-1">
+				<label className="text-[11px] text-muted-foreground/70" htmlFor="state-select">
 					State/UT
 				</label>
 				<Select value={selectedState} onValueChange={onStateChange}>
-					<SelectTrigger id="state-select" className="w-[200px]">
+					<SelectTrigger id="state-select" className="w-[180px] h-8 text-xs">
 						<SelectValue placeholder="All States" />
 					</SelectTrigger>
 					<SelectContent>
@@ -48,12 +53,12 @@ export function Filters({
 				</Select>
 			</div>
 
-			<div className="flex flex-col gap-1.5">
-				<label className="text-sm text-muted-foreground" htmlFor="area-select">
+			<div className="flex flex-col gap-1">
+				<label className="text-[11px] text-muted-foreground/70" htmlFor="area-select">
 					Area Type
 				</label>
 				<Select value={areaType} onValueChange={(v) => onAreaTypeChange(v as AreaType)}>
-					<SelectTrigger id="area-select" className="w-[150px]">
+					<SelectTrigger id="area-select" className="w-[130px] h-8 text-xs">
 						<SelectValue placeholder="All Areas" />
 					</SelectTrigger>
 					<SelectContent>
@@ -64,12 +69,12 @@ export function Filters({
 				</Select>
 			</div>
 
-			<div className="flex flex-col gap-1.5">
-				<label className="text-sm text-muted-foreground" htmlFor="period-select">
+			<div className="flex flex-col gap-1">
+				<label className="text-[11px] text-muted-foreground/70" htmlFor="period-select">
 					Time Period
 				</label>
 				<Select value={timePeriod} onValueChange={onTimePeriodChange}>
-					<SelectTrigger id="period-select" className="w-[180px]">
+					<SelectTrigger id="period-select" className="w-[160px] h-8 text-xs">
 						<SelectValue placeholder="Select Period" />
 					</SelectTrigger>
 					<SelectContent>

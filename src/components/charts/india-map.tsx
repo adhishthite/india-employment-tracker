@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { getUnemploymentColor } from "@/data/plfs-data";
 import type { StateEmploymentData } from "@/types/employment";
 
@@ -246,6 +246,7 @@ export function IndiaMap({
 }: IndiaMapProps) {
 	const [hoveredState, setHoveredState] = useState<string | null>(null);
 	const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
+	const containerRef = useRef<HTMLDivElement>(null);
 
 	const getMetricValue = useCallback(
 		(stateCode: string): number => {
@@ -262,7 +263,6 @@ export function IndiaMap({
 			if (metric === "unemploymentRate") {
 				return getUnemploymentColor(value);
 			}
-			// For LFPR and WPR, higher is better
 			if (value >= 60) return "#22c55e";
 			if (value >= 55) return "#84cc16";
 			if (value >= 50) return "#eab308";
@@ -278,7 +278,14 @@ export function IndiaMap({
 
 	const handleMouseMove = (e: React.MouseEvent, stateCode: string) => {
 		setHoveredState(stateCode);
-		setTooltipPos({ x: e.clientX, y: e.clientY });
+		const container = containerRef.current;
+		if (container) {
+			const rect = container.getBoundingClientRect();
+			setTooltipPos({
+				x: e.clientX - rect.left,
+				y: e.clientY - rect.top,
+			});
+		}
 	};
 
 	const handleMouseLeave = () => {
@@ -287,23 +294,48 @@ export function IndiaMap({
 
 	const hoveredStateData = hoveredState ? data.find((s) => s.stateCode === hoveredState) : null;
 
+	const metricLabel =
+		metric === "unemploymentRate" ? "Unemployment Rate" : metric === "lfpr" ? "LFPR" : "WPR";
+
 	return (
-		<div className="relative w-full h-full min-h-[500px]">
+		<div ref={containerRef} className="relative w-full h-full min-h-[500px]">
 			<svg viewBox="0 0 480 680" className="w-full h-full" preserveAspectRatio="xMidYMid meet">
 				<title>India Employment Map</title>
+				<defs>
+					<filter id="state-glow">
+						<feGaussianBlur stdDeviation="3" result="coloredBlur" />
+						<feMerge>
+							<feMergeNode in="coloredBlur" />
+							<feMergeNode in="SourceGraphic" />
+						</feMerge>
+					</filter>
+					<filter id="state-shadow">
+						<feDropShadow dx="0" dy="1" stdDeviation="2" floodOpacity="0.15" />
+					</filter>
+				</defs>
 				{Object.entries(STATE_PATHS).map(([code, { path }]) => {
 					const isSelected = selectedStates.includes(code);
 					const isHovered = hoveredState === code;
 					const stateExists = data.some((s) => s.stateCode === code);
+					const fillColor = stateExists ? getStateColor(code) : "oklch(0.3 0 0)";
 
 					return (
 						<path
 							key={code}
 							d={path}
-							fill={stateExists ? getStateColor(code) : "#374151"}
-							stroke={isSelected ? "#3b82f6" : isHovered ? "#1f2937" : "#6b7280"}
-							strokeWidth={isSelected ? 3 : isHovered ? 2 : 1}
-							className="cursor-pointer transition-all duration-200"
+							fill={fillColor}
+							stroke={
+								isSelected ? "#818cf8" : isHovered ? "oklch(0.9 0 0)" : "oklch(0.4 0.01 260 / 30%)"
+							}
+							strokeWidth={isSelected ? 2.5 : isHovered ? 1.5 : 0.5}
+							className="cursor-pointer"
+							style={{
+								transition: "all 0.2s ease-out",
+								filter: isSelected || isHovered ? "url(#state-shadow)" : undefined,
+								opacity: selectedStates.length > 0 && !isSelected && !isHovered ? 0.45 : 1,
+								transform: isHovered ? "scale(1.01)" : undefined,
+								transformOrigin: "center",
+							}}
 							onMouseMove={(e) => handleMouseMove(e, code)}
 							onMouseLeave={handleMouseLeave}
 							onClick={() => onStateClick?.(code)}
@@ -315,7 +347,6 @@ export function IndiaMap({
 							role="button"
 							tabIndex={0}
 							aria-label={`${STATE_PATHS[code]?.name || code} state`}
-							opacity={selectedStates.length > 0 && !isSelected ? 0.5 : 1}
 						/>
 					);
 				})}
@@ -324,83 +355,73 @@ export function IndiaMap({
 			{/* Tooltip */}
 			{hoveredState && hoveredStateData && (
 				<div
-					className="fixed z-50 bg-background border border-border rounded-lg shadow-lg p-3 pointer-events-none"
+					className="absolute z-50 bg-card/95 glass-effect border border-border/50 rounded-xl shadow-xl p-3 pointer-events-none"
 					style={{
-						left: tooltipPos.x + 15,
-						top: tooltipPos.y + 15,
+						left: Math.min(tooltipPos.x + 12, (containerRef.current?.clientWidth ?? 400) - 200),
+						top: tooltipPos.y + 12,
 					}}
 				>
-					<p className="font-semibold text-sm">{getStateName(hoveredState)}</p>
-					<div className="text-xs text-muted-foreground mt-1 space-y-0.5">
-						<p>
-							Unemployment Rate:{" "}
-							<span className="font-medium text-foreground">
+					<div className="flex items-center gap-2 mb-1.5">
+						<div
+							className="w-2.5 h-2.5 rounded-full"
+							style={{ backgroundColor: getStateColor(hoveredState) }}
+						/>
+						<p className="font-semibold text-sm">{getStateName(hoveredState)}</p>
+					</div>
+					<div className="text-xs space-y-1 text-muted-foreground">
+						<div className="flex justify-between gap-4">
+							<span>Unemployment Rate</span>
+							<span className="font-semibold text-foreground tabular-nums">
 								{hoveredStateData.unemploymentRate}%
 							</span>
-						</p>
-						<p>
-							LFPR: <span className="font-medium text-foreground">{hoveredStateData.lfpr}%</span>
-						</p>
-						<p>
-							WPR: <span className="font-medium text-foreground">{hoveredStateData.wpr}%</span>
-						</p>
+						</div>
+						<div className="flex justify-between gap-4">
+							<span>LFPR</span>
+							<span className="font-semibold text-foreground tabular-nums">
+								{hoveredStateData.lfpr}%
+							</span>
+						</div>
+						<div className="flex justify-between gap-4">
+							<span>WPR</span>
+							<span className="font-semibold text-foreground tabular-nums">
+								{hoveredStateData.wpr}%
+							</span>
+						</div>
 					</div>
 				</div>
 			)}
 
 			{/* Legend */}
-			<div className="absolute bottom-4 left-4 bg-background/90 backdrop-blur-sm border border-border rounded-lg p-3">
-				<p className="text-xs font-medium mb-2">
-					{metric === "unemploymentRate" ? "Unemployment Rate" : metric === "lfpr" ? "LFPR" : "WPR"}
+			<div className="absolute bottom-3 left-3 bg-card/90 glass-effect border border-border/40 rounded-lg px-3 py-2.5">
+				<p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">
+					{metricLabel}
 				</p>
-				<div className="flex flex-col gap-1 text-xs">
-					{metric === "unemploymentRate" ? (
-						<>
-							<div className="flex items-center gap-2">
-								<div className="w-4 h-3 rounded bg-[#22c55e]" />
-								<span>&le;2.5% (Low)</span>
-							</div>
-							<div className="flex items-center gap-2">
-								<div className="w-4 h-3 rounded bg-[#84cc16]" />
-								<span>2.5-4%</span>
-							</div>
-							<div className="flex items-center gap-2">
-								<div className="w-4 h-3 rounded bg-[#eab308]" />
-								<span>4-5.5%</span>
-							</div>
-							<div className="flex items-center gap-2">
-								<div className="w-4 h-3 rounded bg-[#f97316]" />
-								<span>5.5-7%</span>
-							</div>
-							<div className="flex items-center gap-2">
-								<div className="w-4 h-3 rounded bg-[#ef4444]" />
-								<span>&gt;7% (High)</span>
-							</div>
-						</>
-					) : (
-						<>
-							<div className="flex items-center gap-2">
-								<div className="w-4 h-3 rounded bg-[#22c55e]" />
-								<span>&ge;60% (High)</span>
-							</div>
-							<div className="flex items-center gap-2">
-								<div className="w-4 h-3 rounded bg-[#84cc16]" />
-								<span>55-60%</span>
-							</div>
-							<div className="flex items-center gap-2">
-								<div className="w-4 h-3 rounded bg-[#eab308]" />
-								<span>50-55%</span>
-							</div>
-							<div className="flex items-center gap-2">
-								<div className="w-4 h-3 rounded bg-[#f97316]" />
-								<span>45-50%</span>
-							</div>
-							<div className="flex items-center gap-2">
-								<div className="w-4 h-3 rounded bg-[#ef4444]" />
-								<span>&lt;45% (Low)</span>
-							</div>
-						</>
-					)}
+				<div className="flex items-center gap-0.5">
+					{metric === "unemploymentRate"
+						? ["#22c55e", "#84cc16", "#eab308", "#f97316", "#ef4444"].map((color, i) => (
+								<div
+									key={color}
+									className="h-2 flex-1 min-w-[24px]"
+									style={{
+										backgroundColor: color,
+										borderRadius: i === 0 ? "2px 0 0 2px" : i === 4 ? "0 2px 2px 0" : "0",
+									}}
+								/>
+							))
+						: ["#ef4444", "#f97316", "#eab308", "#84cc16", "#22c55e"].map((color, i) => (
+								<div
+									key={color}
+									className="h-2 flex-1 min-w-[24px]"
+									style={{
+										backgroundColor: color,
+										borderRadius: i === 0 ? "2px 0 0 2px" : i === 4 ? "0 2px 2px 0" : "0",
+									}}
+								/>
+							))}
+				</div>
+				<div className="flex justify-between text-[9px] text-muted-foreground/70 mt-0.5">
+					<span>{metric === "unemploymentRate" ? "Low" : "Low"}</span>
+					<span>{metric === "unemploymentRate" ? "High" : "High"}</span>
 				</div>
 			</div>
 		</div>

@@ -11,6 +11,7 @@ import {
 	YAxis,
 } from "recharts";
 import type { AgeGroupData } from "@/types/employment";
+import { ChartTooltip, chartAxisStyle, chartGridStyle, chartTickStyle } from "./chart-theme";
 
 interface AgeGroupChartProps {
 	data: AgeGroupData[];
@@ -25,41 +26,56 @@ export function AgeGroupChart({ data, showGender = false }: AgeGroupChartProps) 
 
 	return (
 		<ResponsiveContainer width="100%" height={350}>
-			<BarChart data={chartData} margin={{ top: 5, right: 30, left: 0, bottom: 5 }}>
-				<CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+			<BarChart data={chartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+				<CartesianGrid strokeDasharray="3 3" stroke={chartGridStyle} />
 				<XAxis
 					dataKey="name"
-					tick={{ fill: "#9ca3af", fontSize: 12 }}
-					axisLine={{ stroke: "#4b5563" }}
+					tick={chartTickStyle}
+					axisLine={{ stroke: chartAxisStyle }}
+					tickLine={false}
 				/>
 				<YAxis
-					tick={{ fill: "#9ca3af", fontSize: 12 }}
-					axisLine={{ stroke: "#4b5563" }}
+					tick={chartTickStyle}
+					axisLine={false}
+					tickLine={false}
 					tickFormatter={(v) => `${v}%`}
 				/>
 				<Tooltip
-					contentStyle={{
-						backgroundColor: "hsl(var(--background))",
-						border: "1px solid hsl(var(--border))",
-						borderRadius: "8px",
+					content={({ active, payload, label }) => {
+						if (active && payload && payload.length) {
+							return (
+								<ChartTooltip>
+									<p className="font-semibold text-foreground mb-1">{label}</p>
+									{payload.map((entry) => (
+										<div key={entry.dataKey as string} className="flex justify-between gap-3">
+											<span className="text-muted-foreground">{entry.name}</span>
+											<span className="font-semibold tabular-nums" style={{ color: entry.color }}>
+												{entry.value}%
+											</span>
+										</div>
+									))}
+								</ChartTooltip>
+							);
+						}
+						return null;
 					}}
-					labelStyle={{ color: "hsl(var(--foreground))" }}
-					formatter={(value) => [`${value}%`, ""]}
 				/>
-				<Legend wrapperStyle={{ color: "#9ca3af" }} />
+				<Legend wrapperStyle={{ fontSize: "11px", paddingTop: "8px" }} />
 				{showGender ? (
 					<>
 						<Bar
 							dataKey="maleUnemploymentRate"
 							name="Male UR"
-							fill="#3b82f6"
+							fill="#60a5fa"
 							radius={[4, 4, 0, 0]}
+							animationDuration={800}
 						/>
 						<Bar
 							dataKey="femaleUnemploymentRate"
 							name="Female UR"
-							fill="#ec4899"
+							fill="#f472b6"
 							radius={[4, 4, 0, 0]}
+							animationDuration={800}
 						/>
 					</>
 				) : (
@@ -67,10 +83,17 @@ export function AgeGroupChart({ data, showGender = false }: AgeGroupChartProps) 
 						<Bar
 							dataKey="unemploymentRate"
 							name="Unemployment Rate"
-							fill="#ef4444"
+							fill="#f87171"
 							radius={[4, 4, 0, 0]}
+							animationDuration={800}
 						/>
-						<Bar dataKey="lfpr" name="LFPR" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+						<Bar
+							dataKey="lfpr"
+							name="LFPR"
+							fill="#60a5fa"
+							radius={[4, 4, 0, 0]}
+							animationDuration={800}
+						/>
 					</>
 				)}
 			</BarChart>

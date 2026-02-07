@@ -2,6 +2,7 @@
 
 import { Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import type { SectorData } from "@/types/employment";
+import { ChartTooltip } from "./chart-theme";
 
 interface SectorPieChartProps {
 	data: SectorData[];
@@ -9,14 +10,14 @@ interface SectorPieChartProps {
 }
 
 const COLORS = [
-	"#22c55e", // Agriculture - green
-	"#3b82f6", // Manufacturing - blue
-	"#f97316", // Construction - orange
-	"#8b5cf6", // Trade - purple
-	"#06b6d4", // Transport - cyan
-	"#ec4899", // Education/Health - pink
-	"#eab308", // Public Admin - yellow
-	"#6b7280", // Other - gray
+	"#34d399", // Agriculture - emerald
+	"#60a5fa", // Manufacturing - blue
+	"#fb923c", // Construction - orange
+	"#a78bfa", // Trade - violet
+	"#22d3ee", // Transport - cyan
+	"#f472b6", // Education/Health - pink
+	"#fbbf24", // Public Admin - amber
+	"#94a3b8", // Other - slate
 ];
 
 export function SectorPieChart({ data, areaType = "all" }: SectorPieChartProps) {
@@ -36,12 +37,15 @@ export function SectorPieChart({ data, areaType = "all" }: SectorPieChartProps) 
 				<Pie
 					data={chartData}
 					cx="50%"
-					cy="50%"
+					cy="45%"
 					labelLine={false}
-					outerRadius={120}
-					innerRadius={60}
+					outerRadius={110}
+					innerRadius={55}
 					paddingAngle={2}
 					dataKey="value"
+					strokeWidth={0}
+					animationDuration={800}
+					animationEasing="ease-out"
 					label={({ name, percent }) =>
 						percent && percent > 0.05
 							? `${String(name).split(" ")[0]} ${(percent * 100).toFixed(0)}%`
@@ -49,22 +53,37 @@ export function SectorPieChart({ data, areaType = "all" }: SectorPieChartProps) 
 					}
 				>
 					{chartData.map((_, index) => (
-						<Cell key={`cell-${index.toString()}`} fill={COLORS[index % COLORS.length]} />
+						<Cell
+							key={`cell-${index.toString()}`}
+							fill={COLORS[index % COLORS.length]}
+							fillOpacity={0.85}
+						/>
 					))}
 				</Pie>
 				<Tooltip
-					contentStyle={{
-						backgroundColor: "hsl(var(--background))",
-						border: "1px solid hsl(var(--border))",
-						borderRadius: "8px",
+					content={({ active, payload }) => {
+						if (active && payload && payload.length) {
+							const item = payload[0];
+							return (
+								<ChartTooltip>
+									<p className="font-semibold text-foreground">{item.name}</p>
+									<p className="text-muted-foreground mt-0.5">
+										Employment:{" "}
+										<span className="font-semibold text-foreground tabular-nums">
+											{item.value}%
+										</span>
+									</p>
+								</ChartTooltip>
+							);
+						}
+						return null;
 					}}
-					formatter={(value) => [`${value}%`, "Employment"]}
 				/>
 				<Legend
 					layout="horizontal"
 					verticalAlign="bottom"
 					align="center"
-					wrapperStyle={{ paddingTop: "20px" }}
+					wrapperStyle={{ paddingTop: "16px", fontSize: "11px" }}
 				/>
 			</PieChart>
 		</ResponsiveContainer>

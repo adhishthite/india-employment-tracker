@@ -12,6 +12,7 @@ import {
 } from "recharts";
 import { getUnemploymentColor } from "@/data/plfs-data";
 import type { StateEmploymentData } from "@/types/employment";
+import { ChartTooltip, chartAxisStyle, chartGridStyle, chartTickStyle } from "./chart-theme";
 
 interface UnemploymentBarChartProps {
 	data: StateEmploymentData[];
@@ -35,7 +36,7 @@ export function UnemploymentBarChart({
 		.slice(0, maxItems);
 
 	const chartData = sortedData.map((state) => ({
-		name: state.stateName.length > 12 ? `${state.stateName.slice(0, 10)}...` : state.stateName,
+		name: state.stateName.length > 14 ? `${state.stateName.slice(0, 12)}...` : state.stateName,
 		fullName: state.stateName,
 		stateCode: state.stateCode,
 		value: state.unemploymentRate,
@@ -44,33 +45,38 @@ export function UnemploymentBarChart({
 
 	return (
 		<ResponsiveContainer width="100%" height={350}>
-			<BarChart data={chartData} layout="vertical" margin={{ left: 10, right: 30 }}>
-				<CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#374151" />
+			<BarChart data={chartData} layout="vertical" margin={{ left: 10, right: 20 }}>
+				<CartesianGrid strokeDasharray="3 3" horizontal vertical={false} stroke={chartGridStyle} />
 				<XAxis
 					type="number"
 					domain={[0, "dataMax + 1"]}
 					tickFormatter={(v) => `${v}%`}
-					tick={{ fill: "#9ca3af", fontSize: 12 }}
-					axisLine={{ stroke: "#4b5563" }}
+					tick={chartTickStyle}
+					axisLine={{ stroke: chartAxisStyle }}
+					tickLine={false}
 				/>
 				<YAxis
 					type="category"
 					dataKey="name"
-					width={100}
-					tick={{ fill: "#9ca3af", fontSize: 11 }}
-					axisLine={{ stroke: "#4b5563" }}
+					width={105}
+					tick={chartTickStyle}
+					axisLine={false}
+					tickLine={false}
 				/>
 				<Tooltip
 					content={({ active, payload }) => {
 						if (active && payload && payload.length) {
 							const item = payload[0].payload;
 							return (
-								<div className="bg-background border border-border rounded-lg shadow-lg p-3">
-									<p className="font-semibold text-sm">{item.fullName}</p>
-									<p className="text-sm text-muted-foreground">
-										Unemployment: <span className="font-medium text-foreground">{item.value}%</span>
+								<ChartTooltip>
+									<p className="font-semibold text-sm text-foreground">{item.fullName}</p>
+									<p className="text-muted-foreground mt-0.5">
+										Unemployment:{" "}
+										<span className="font-semibold text-foreground tabular-nums">
+											{item.value}%
+										</span>
 									</p>
-								</div>
+								</ChartTooltip>
 							);
 						}
 						return null;
@@ -78,15 +84,17 @@ export function UnemploymentBarChart({
 				/>
 				<Bar
 					dataKey="value"
-					radius={[0, 4, 4, 0]}
+					radius={[0, 6, 6, 0]}
 					cursor="pointer"
+					animationDuration={800}
+					animationEasing="ease-out"
 					onClick={(data) => {
 						const item = data as unknown as { stateCode: string };
 						onStateClick?.(item.stateCode);
 					}}
 				>
 					{chartData.map((entry) => (
-						<Cell key={entry.stateCode} fill={entry.color} />
+						<Cell key={entry.stateCode} fill={entry.color} fillOpacity={0.85} />
 					))}
 				</Bar>
 			</BarChart>

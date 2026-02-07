@@ -1,5 +1,6 @@
 "use client";
 
+import { AlertTriangle, Lightbulb, Users } from "lucide-react";
 import { useCallback, useState } from "react";
 import {
 	AgeGroupChart,
@@ -17,8 +18,8 @@ import {
 	SummaryCards,
 	UrbanRuralCards,
 } from "@/components/dashboard";
+import { FadeInUp } from "@/components/motion";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ageGroupData, nationalSummary, sectorData, stateData, trendData } from "@/data/plfs-data";
@@ -60,239 +61,402 @@ export default function Dashboard() {
 		.filter((s): s is StateEmploymentData => s !== undefined);
 
 	return (
-		<div className="container px-4 py-6 space-y-6">
-			{/* Filters */}
-			<Filters
-				selectedState={selectedState}
-				onStateChange={setSelectedState}
-				areaType={areaType}
-				onAreaTypeChange={setAreaType}
-				timePeriod={timePeriod}
-				onTimePeriodChange={setTimePeriod}
-			/>
+		<div className="container px-4 py-6">
+			{/* Filters Bar */}
+			<FadeInUp>
+				<div className="flex items-center justify-between mb-6">
+					<Filters
+						selectedState={selectedState}
+						onStateChange={setSelectedState}
+						areaType={areaType}
+						onAreaTypeChange={setAreaType}
+						timePeriod={timePeriod}
+						onTimePeriodChange={setTimePeriod}
+					/>
+				</div>
+			</FadeInUp>
 
-			{/* Summary Cards */}
-			<SummaryCards data={nationalSummary} />
+			{/* Top-level nav tabs */}
+			<Tabs defaultValue="overview" className="space-y-6">
+				<FadeInUp delay={0.05}>
+					<TabsList className="inline-flex h-9 bg-muted/50 p-0.5 rounded-lg">
+						<TabsTrigger value="overview" className="text-xs px-4 rounded-md">
+							Overview
+						</TabsTrigger>
+						<TabsTrigger value="states" className="text-xs px-4 rounded-md">
+							State Analysis
+						</TabsTrigger>
+						<TabsTrigger value="trends" className="text-xs px-4 rounded-md">
+							Trends
+						</TabsTrigger>
+						<TabsTrigger value="demographics" className="text-xs px-4 rounded-md">
+							Gender & Demographics
+						</TabsTrigger>
+					</TabsList>
+				</FadeInUp>
 
-			{/* Gender and Urban/Rural Quick Stats */}
-			<div className="grid gap-6 lg:grid-cols-2">
-				<GenderLfprCards
-					maleLfpr={nationalSummary.maleLfpr}
-					femaleLfpr={nationalSummary.femaleLfpr}
-				/>
-				<UrbanRuralCards urbanUR={nationalSummary.urbanUR} ruralUR={nationalSummary.ruralUR} />
-			</div>
+				{/* ===== OVERVIEW TAB ===== */}
+				<TabsContent value="overview" className="space-y-6 mt-0">
+					{/* Summary Cards */}
+					<SummaryCards data={nationalSummary} />
 
-			<Separator />
-
-			{/* Main Content: Map and Charts */}
-			<div className="grid gap-6 lg:grid-cols-2">
-				{/* India Map */}
-				<Card className="lg:row-span-2">
-					<CardHeader>
-						<div className="flex items-center justify-between">
-							<div>
-								<CardTitle>State-wise Employment Map</CardTitle>
-								<CardDescription>Click states to compare (max 5)</CardDescription>
-							</div>
-							<select
-								value={mapMetric}
-								onChange={(e) =>
-									setMapMetric(e.target.value as "unemploymentRate" | "lfpr" | "wpr")
-								}
-								className="text-sm bg-secondary border border-border rounded-md px-2 py-1"
-							>
-								<option value="unemploymentRate">Unemployment Rate</option>
-								<option value="lfpr">LFPR</option>
-								<option value="wpr">WPR</option>
-							</select>
+					{/* Gender and Urban/Rural Quick Stats */}
+					<FadeInUp delay={0.15}>
+						<div className="grid gap-4 lg:grid-cols-2">
+							<GenderLfprCards
+								maleLfpr={nationalSummary.maleLfpr}
+								femaleLfpr={nationalSummary.femaleLfpr}
+							/>
+							<UrbanRuralCards
+								urbanUR={nationalSummary.urbanUR}
+								ruralUR={nationalSummary.ruralUR}
+							/>
 						</div>
-					</CardHeader>
-					<CardContent>
-						<IndiaMap
-							data={stateData}
-							onStateClick={handleStateClick}
-							selectedStates={compareStates}
-							metric={mapMetric}
-						/>
-					</CardContent>
-				</Card>
+					</FadeInUp>
 
-				{/* Top Unemployed States */}
-				<Card>
-					<CardHeader>
-						<CardTitle>States by Unemployment Rate</CardTitle>
-						<CardDescription>Top 10 states with highest unemployment</CardDescription>
-					</CardHeader>
-					<CardContent>
-						<UnemploymentBarChart
-							data={stateData}
-							maxItems={10}
-							sortOrder="desc"
-							onStateClick={handleStateClick}
-						/>
-					</CardContent>
-				</Card>
+					{/* Map + Bar Chart */}
+					<FadeInUp delay={0.2}>
+						<div className="grid gap-4 lg:grid-cols-2">
+							<Card className="border-border/50">
+								<CardHeader className="pb-3">
+									<div className="flex items-center justify-between">
+										<div>
+											<CardTitle className="text-sm font-semibold">Employment Map</CardTitle>
+											<CardDescription className="text-xs">
+												Click states to compare (max 5)
+											</CardDescription>
+										</div>
+										<select
+											value={mapMetric}
+											onChange={(e) =>
+												setMapMetric(e.target.value as "unemploymentRate" | "lfpr" | "wpr")
+											}
+											className="text-xs bg-muted/50 border border-border/50 rounded-md px-2 py-1 focus:outline-none focus:ring-1 focus:ring-ring"
+										>
+											<option value="unemploymentRate">Unemployment Rate</option>
+											<option value="lfpr">LFPR</option>
+											<option value="wpr">WPR</option>
+										</select>
+									</div>
+								</CardHeader>
+								<CardContent>
+									<IndiaMap
+										data={stateData}
+										onStateClick={handleStateClick}
+										selectedStates={compareStates}
+										metric={mapMetric}
+									/>
+								</CardContent>
+							</Card>
 
-				{/* State Comparison */}
-				<StateComparison
-					selectedStates={selectedStatesData}
-					onRemoveState={handleRemoveState}
-					onClearAll={handleClearAll}
-				/>
-			</div>
+							<div className="space-y-4">
+								<Card className="border-border/50">
+									<CardHeader className="pb-3">
+										<CardTitle className="text-sm font-semibold">
+											Highest Unemployment States
+										</CardTitle>
+										<CardDescription className="text-xs">
+											Top 10 by unemployment rate
+										</CardDescription>
+									</CardHeader>
+									<CardContent>
+										<UnemploymentBarChart
+											data={stateData}
+											maxItems={10}
+											sortOrder="desc"
+											onStateClick={handleStateClick}
+										/>
+									</CardContent>
+								</Card>
 
-			<Separator />
+								<StateComparison
+									selectedStates={selectedStatesData}
+									onRemoveState={handleRemoveState}
+									onClearAll={handleClearAll}
+								/>
+							</div>
+						</div>
+					</FadeInUp>
 
-			{/* Trends Section */}
-			<Card>
-				<CardHeader>
-					<div className="flex items-center justify-between">
+					{/* Insights */}
+					<FadeInUp delay={0.25}>
+						<div className="grid gap-4 md:grid-cols-3">
+							<Card className="border-border/50 group hover:shadow-sm transition-shadow">
+								<CardContent className="pt-5 pb-4 px-5">
+									<div className="flex items-center gap-2 mb-2">
+										<div className="flex items-center justify-center w-7 h-7 rounded-lg bg-amber-500/10">
+											<Lightbulb className="h-3.5 w-3.5 text-amber-500" />
+										</div>
+										<p className="text-xs font-semibold">Key Insight</p>
+									</div>
+									<p className="text-xs text-muted-foreground leading-relaxed">
+										Youth unemployment (15-29) remains at{" "}
+										<span className="font-semibold text-foreground">
+											{nationalSummary.youthUR}%
+										</span>
+										, well above the national average of {nationalSummary.unemploymentRate}%.
+										Targeted employment programs for young job seekers are critical.
+									</p>
+								</CardContent>
+							</Card>
+							<Card className="border-border/50 group hover:shadow-sm transition-shadow">
+								<CardContent className="pt-5 pb-4 px-5">
+									<div className="flex items-center gap-2 mb-2">
+										<div className="flex items-center justify-center w-7 h-7 rounded-lg bg-pink-500/10">
+											<Users className="h-3.5 w-3.5 text-pink-500" />
+										</div>
+										<p className="text-xs font-semibold">Gender Gap</p>
+									</div>
+									<p className="text-xs text-muted-foreground leading-relaxed">
+										Female LFPR at{" "}
+										<span className="font-semibold text-foreground">
+											{nationalSummary.femaleLfpr}%
+										</span>{" "}
+										vs male LFPR of {nationalSummary.maleLfpr}%. The{" "}
+										{(nationalSummary.maleLfpr - nationalSummary.femaleLfpr).toFixed(1)}% gap
+										highlights the need for policies promoting women's workforce participation.
+									</p>
+								</CardContent>
+							</Card>
+							<Card className="border-border/50 group hover:shadow-sm transition-shadow">
+								<CardContent className="pt-5 pb-4 px-5">
+									<div className="flex items-center gap-2 mb-2">
+										<div className="flex items-center justify-center w-7 h-7 rounded-lg bg-orange-500/10">
+											<AlertTriangle className="h-3.5 w-3.5 text-orange-500" />
+										</div>
+										<p className="text-xs font-semibold">Urban-Rural Divide</p>
+									</div>
+									<p className="text-xs text-muted-foreground leading-relaxed">
+										Urban unemployment ({nationalSummary.urbanUR}%) is{" "}
+										{(nationalSummary.urbanUR / nationalSummary.ruralUR).toFixed(1)}x the rural rate
+										({nationalSummary.ruralUR}%), reflecting the dynamics of formal vs agricultural
+										employment.
+									</p>
+								</CardContent>
+							</Card>
+						</div>
+					</FadeInUp>
+				</TabsContent>
+
+				{/* ===== STATE ANALYSIS TAB ===== */}
+				<TabsContent value="states" className="space-y-6 mt-0">
+					<FadeInUp>
+						<div className="grid gap-4 lg:grid-cols-2">
+							<Card className="lg:row-span-2 border-border/50">
+								<CardHeader className="pb-3">
+									<div className="flex items-center justify-between">
+										<div>
+											<CardTitle className="text-sm font-semibold">State-wise Map</CardTitle>
+											<CardDescription className="text-xs">
+												Click to select states for comparison
+											</CardDescription>
+										</div>
+										<select
+											value={mapMetric}
+											onChange={(e) =>
+												setMapMetric(e.target.value as "unemploymentRate" | "lfpr" | "wpr")
+											}
+											className="text-xs bg-muted/50 border border-border/50 rounded-md px-2 py-1 focus:outline-none focus:ring-1 focus:ring-ring"
+										>
+											<option value="unemploymentRate">Unemployment Rate</option>
+											<option value="lfpr">LFPR</option>
+											<option value="wpr">WPR</option>
+										</select>
+									</div>
+								</CardHeader>
+								<CardContent>
+									<IndiaMap
+										data={stateData}
+										onStateClick={handleStateClick}
+										selectedStates={compareStates}
+										metric={mapMetric}
+									/>
+								</CardContent>
+							</Card>
+
+							<Card className="border-border/50">
+								<CardHeader className="pb-3">
+									<CardTitle className="text-sm font-semibold">
+										States by Unemployment Rate
+									</CardTitle>
+									<CardDescription className="text-xs">
+										Click bars to add to comparison
+									</CardDescription>
+								</CardHeader>
+								<CardContent>
+									<UnemploymentBarChart
+										data={stateData}
+										maxItems={10}
+										sortOrder="desc"
+										onStateClick={handleStateClick}
+									/>
+								</CardContent>
+							</Card>
+
+							<StateComparison
+								selectedStates={selectedStatesData}
+								onRemoveState={handleRemoveState}
+								onClearAll={handleClearAll}
+							/>
+						</div>
+					</FadeInUp>
+
+					<FadeInUp delay={0.1}>
+						<Card className="border-border/50">
+							<CardHeader className="pb-3">
+								<CardTitle className="text-sm font-semibold">
+									Urban vs Rural Unemployment by State
+								</CardTitle>
+								<CardDescription className="text-xs">
+									States with largest urban-rural gap
+								</CardDescription>
+							</CardHeader>
+							<CardContent>
+								<UrbanRuralChart data={stateData} maxItems={12} />
+							</CardContent>
+						</Card>
+					</FadeInUp>
+				</TabsContent>
+
+				{/* ===== TRENDS TAB ===== */}
+				<TabsContent value="trends" className="space-y-6 mt-0">
+					<FadeInUp>
+						<Card className="border-border/50">
+							<CardHeader className="pb-3">
+								<div className="flex items-center justify-between">
+									<div>
+										<CardTitle className="text-sm font-semibold">
+											Employment Trends (2020-2024)
+										</CardTitle>
+										<CardDescription className="text-xs">
+											Quarterly trend analysis with gradient area charts
+										</CardDescription>
+									</div>
+									<div className="flex items-center gap-2">
+										<span className="text-xs text-muted-foreground">Urban/Rural</span>
+										<Switch
+											checked={showUrbanRuralTrend}
+											onCheckedChange={setShowUrbanRuralTrend}
+										/>
+									</div>
+								</div>
+							</CardHeader>
+							<CardContent>
+								<TrendChart data={trendData} showUrbanRural={showUrbanRuralTrend} />
+							</CardContent>
+						</Card>
+					</FadeInUp>
+
+					<FadeInUp delay={0.1}>
+						<Card className="border-border/50">
+							<CardHeader className="pb-3">
+								<div className="flex items-center justify-between">
+									<div>
+										<CardTitle className="text-sm font-semibold">Age-Group Unemployment</CardTitle>
+										<CardDescription className="text-xs">
+											Unemployment and LFPR across age cohorts
+										</CardDescription>
+									</div>
+									<div className="flex items-center gap-2">
+										<span className="text-xs text-muted-foreground">By Gender</span>
+										<Switch checked={showGenderAge} onCheckedChange={setShowGenderAge} />
+									</div>
+								</div>
+							</CardHeader>
+							<CardContent>
+								<AgeGroupChart data={ageGroupData} showGender={showGenderAge} />
+							</CardContent>
+						</Card>
+					</FadeInUp>
+				</TabsContent>
+
+				{/* ===== DEMOGRAPHICS TAB ===== */}
+				<TabsContent value="demographics" className="space-y-6 mt-0">
+					<FadeInUp>
+						<div className="grid gap-4 lg:grid-cols-2">
+							<GenderLfprCards
+								maleLfpr={nationalSummary.maleLfpr}
+								femaleLfpr={nationalSummary.femaleLfpr}
+							/>
+							<UrbanRuralCards
+								urbanUR={nationalSummary.urbanUR}
+								ruralUR={nationalSummary.ruralUR}
+							/>
+						</div>
+					</FadeInUp>
+
+					<FadeInUp delay={0.1}>
+						<Card className="border-border/50">
+							<CardHeader className="pb-3">
+								<CardTitle className="text-sm font-semibold">Gender-wise LFPR by State</CardTitle>
+								<CardDescription className="text-xs">
+									Male vs Female Labour Force Participation Rate (top 15 states)
+								</CardDescription>
+							</CardHeader>
+							<CardContent>
+								<GenderComparisonChart data={stateData} maxItems={15} />
+							</CardContent>
+						</Card>
+					</FadeInUp>
+
+					<FadeInUp delay={0.15}>
 						<div>
-							<CardTitle>Employment Trends (2020-2024)</CardTitle>
-							<CardDescription>Quarterly trend analysis</CardDescription>
-						</div>
-						<div className="flex items-center gap-2">
-							<span className="text-sm text-muted-foreground">Urban/Rural</span>
-							<Switch checked={showUrbanRuralTrend} onCheckedChange={setShowUrbanRuralTrend} />
-						</div>
-					</div>
-				</CardHeader>
-				<CardContent>
-					<TrendChart data={trendData} showUrbanRural={showUrbanRuralTrend} />
-				</CardContent>
-			</Card>
-
-			{/* Detailed Analysis Tabs */}
-			<Tabs defaultValue="age" className="space-y-4">
-				<TabsList className="grid w-full grid-cols-4">
-					<TabsTrigger value="age">Age Groups</TabsTrigger>
-					<TabsTrigger value="gender">Gender Analysis</TabsTrigger>
-					<TabsTrigger value="sector">Sector Distribution</TabsTrigger>
-					<TabsTrigger value="urbanrural">Urban vs Rural</TabsTrigger>
-				</TabsList>
-
-				<TabsContent value="age">
-					<Card>
-						<CardHeader>
-							<div className="flex items-center justify-between">
-								<div>
-									<CardTitle>Age-Group Analysis</CardTitle>
-									<CardDescription>Unemployment and LFPR by age group</CardDescription>
-								</div>
-								<div className="flex items-center gap-2">
-									<span className="text-sm text-muted-foreground">By Gender</span>
-									<Switch checked={showGenderAge} onCheckedChange={setShowGenderAge} />
-								</div>
+							<h3 className="text-sm font-semibold mb-3">Sector Distribution</h3>
+							<div className="grid gap-4 lg:grid-cols-3">
+								<Card className="border-border/50">
+									<CardHeader className="pb-3">
+										<CardTitle className="text-xs font-semibold">Overall</CardTitle>
+										<CardDescription className="text-[11px]">All areas combined</CardDescription>
+									</CardHeader>
+									<CardContent>
+										<SectorPieChart data={sectorData} areaType="all" />
+									</CardContent>
+								</Card>
+								<Card className="border-border/50">
+									<CardHeader className="pb-3">
+										<CardTitle className="text-xs font-semibold">Urban</CardTitle>
+										<CardDescription className="text-[11px]">Urban areas only</CardDescription>
+									</CardHeader>
+									<CardContent>
+										<SectorPieChart data={sectorData} areaType="urban" />
+									</CardContent>
+								</Card>
+								<Card className="border-border/50">
+									<CardHeader className="pb-3">
+										<CardTitle className="text-xs font-semibold">Rural</CardTitle>
+										<CardDescription className="text-[11px]">Rural areas only</CardDescription>
+									</CardHeader>
+									<CardContent>
+										<SectorPieChart data={sectorData} areaType="rural" />
+									</CardContent>
+								</Card>
 							</div>
-						</CardHeader>
-						<CardContent>
-							<AgeGroupChart data={ageGroupData} showGender={showGenderAge} />
-						</CardContent>
-					</Card>
-				</TabsContent>
+						</div>
+					</FadeInUp>
 
-				<TabsContent value="gender">
-					<Card>
-						<CardHeader>
-							<CardTitle>Gender-wise LFPR Comparison</CardTitle>
-							<CardDescription>
-								Male vs Female Labour Force Participation Rate by state
-							</CardDescription>
-						</CardHeader>
-						<CardContent>
-							<GenderComparisonChart data={stateData} maxItems={15} />
-						</CardContent>
-					</Card>
-				</TabsContent>
-
-				<TabsContent value="sector">
-					<div className="grid gap-6 lg:grid-cols-3">
-						<Card>
-							<CardHeader>
-								<CardTitle>Overall Distribution</CardTitle>
-								<CardDescription>All areas combined</CardDescription>
+					<FadeInUp delay={0.2}>
+						<Card className="border-border/50">
+							<CardHeader className="pb-3">
+								<div className="flex items-center justify-between">
+									<div>
+										<CardTitle className="text-sm font-semibold">Age-Group Analysis</CardTitle>
+										<CardDescription className="text-xs">
+											Unemployment and LFPR by age group
+										</CardDescription>
+									</div>
+									<div className="flex items-center gap-2">
+										<span className="text-xs text-muted-foreground">By Gender</span>
+										<Switch checked={showGenderAge} onCheckedChange={setShowGenderAge} />
+									</div>
+								</div>
 							</CardHeader>
 							<CardContent>
-								<SectorPieChart data={sectorData} areaType="all" />
+								<AgeGroupChart data={ageGroupData} showGender={showGenderAge} />
 							</CardContent>
 						</Card>
-						<Card>
-							<CardHeader>
-								<CardTitle>Urban Sector Distribution</CardTitle>
-								<CardDescription>Urban areas only</CardDescription>
-							</CardHeader>
-							<CardContent>
-								<SectorPieChart data={sectorData} areaType="urban" />
-							</CardContent>
-						</Card>
-						<Card>
-							<CardHeader>
-								<CardTitle>Rural Sector Distribution</CardTitle>
-								<CardDescription>Rural areas only</CardDescription>
-							</CardHeader>
-							<CardContent>
-								<SectorPieChart data={sectorData} areaType="rural" />
-							</CardContent>
-						</Card>
-					</div>
-				</TabsContent>
-
-				<TabsContent value="urbanrural">
-					<Card>
-						<CardHeader>
-							<CardTitle>Urban vs Rural Unemployment</CardTitle>
-							<CardDescription>States with largest urban-rural unemployment gap</CardDescription>
-						</CardHeader>
-						<CardContent>
-							<UrbanRuralChart data={stateData} maxItems={12} />
-						</CardContent>
-					</Card>
+					</FadeInUp>
 				</TabsContent>
 			</Tabs>
-
-			{/* Insights Section */}
-			<div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-				<Card>
-					<CardHeader>
-						<CardTitle className="text-base">Key Insight</CardTitle>
-					</CardHeader>
-					<CardContent>
-						<p className="text-sm text-muted-foreground">
-							Youth unemployment (15-29 years) remains significantly higher at{" "}
-							<span className="font-semibold text-foreground">{nationalSummary.youthUR}%</span>{" "}
-							compared to the national average of {nationalSummary.unemploymentRate}%. This
-							indicates the need for targeted employment programs for young job seekers.
-						</p>
-					</CardContent>
-				</Card>
-				<Card>
-					<CardHeader>
-						<CardTitle className="text-base">Gender Gap</CardTitle>
-					</CardHeader>
-					<CardContent>
-						<p className="text-sm text-muted-foreground">
-							Female LFPR stands at{" "}
-							<span className="font-semibold text-foreground">{nationalSummary.femaleLfpr}%</span>,
-							significantly lower than male LFPR of {nationalSummary.maleLfpr}%. The gender gap of{" "}
-							{(nationalSummary.maleLfpr - nationalSummary.femaleLfpr).toFixed(1)}% highlights the
-							need for policies promoting women's workforce participation.
-						</p>
-					</CardContent>
-				</Card>
-				<Card>
-					<CardHeader>
-						<CardTitle className="text-base">Urban-Rural Divide</CardTitle>
-					</CardHeader>
-					<CardContent>
-						<p className="text-sm text-muted-foreground">
-							Urban unemployment ({nationalSummary.urbanUR}%) is more than double the rural rate (
-							{nationalSummary.ruralUR}%). This reflects both the job market dynamics and
-							measurement differences between formal urban employment and agricultural rural work.
-						</p>
-					</CardContent>
-				</Card>
-			</div>
 		</div>
 	);
 }
